@@ -10,6 +10,9 @@ from jinja2 import Environment, FileSystemLoader
 import orm
 from coroweb import add_routes, add_static
 
+import config
+import pdb
+
 def init_jinja2(app, **kw):
     logging.info('init jinja2...')
     options = dict(
@@ -58,6 +61,7 @@ def response_factory(app, handler):
     @asyncio.coroutine
     def response(request):
         logging.info('Response handler...')
+        logging.info('fun name: %s' % handler.__name__)
         r = yield from handler(request)
         if isinstance(r, web.StreamResponse):
             return r
@@ -106,7 +110,7 @@ def datetime_filter(t):
 
 @asyncio.coroutine
 def init(loop):
-    yield from orm.create_pool(loop=loop, host='localhost', port='3306', user='pylearn', password='199248', db='awesome')
+    yield from orm.create_pool(loop=loop, **config.configs.db)
     app = web.Application(loop=loop, middlewares=[logger_factory, response_factory])
     init_jinja2(app, filters=dict(datetime=datetime_filter))
     add_routes(app, 'handlers')

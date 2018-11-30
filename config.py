@@ -31,3 +31,19 @@ def merge(default, override):
         else:
             r[k] = v
     return r
+
+def toDict(config):
+    D = Dict()
+    for k, v in config.items():
+        D[k] = toDict(v) if isinstance(v, dict) else v
+    return D
+
+configs = config_default.configs
+
+try:
+    import config_override
+    configs = merge(configs, config_override.configs)
+except ImportError:
+    pass
+
+configs = toDict(configs)
