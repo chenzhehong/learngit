@@ -44,16 +44,21 @@ def select(sql, args, size=None):
         logging.info('rows returned: %s' % len(rs))
         return rs
 @asyncio.coroutine
-def execute(sql, args): 
+def execute(sql, args, autocommit=True):
     log(sql)
-    global __pool
     with (yield from __pool) as conn:
+        if not autocommit:
+            yield from conn.begin()
         try:
             cur = yield from conn.cursor()
-            yield from cur.execute(sql.replace('?','%s'), args)
+            yield from cur.execute(sql.replace('?', '%s'), args)
             affected = cur.rowcount
             yield from cur.close()
+            if not autocommit:
+                yield from conn.commit()
         except BaseException as e:
+            if not autocommit:
+                yield from conn.rollback()
             raise
         return affected
         
@@ -123,7 +128,7 @@ class ModelMetaClass(type):
         attrs['__primary_key__'] = primaryKey
         attrs['__fields__'] = fields
         attrs['__select__'] = 'select `%s`, %s from `%s`' % (primaryKey, ', '.join(escaped_fields), tableName)
-        attrs['__insert__'] = 'insert into `%s`(`%s`, %s) values (%s)' % (tableName, primaryKey, ', '.join(escaped_fields), create_args_string(len(escaped_fields)+1))
+        attrs['__insert__'] = 'insert into `%s`(%s, `%s`) values (%s)' % (tableName, ', '.join(escaped_fields), primaryKey, create_args_string(len(escaped_fields)+1))
         attrs['__update__'] = 'update `%s` set %s where `%s`=?' % (tableName, ', '.join(map(lambda f: '`%s`=?' % (mappings.get(f).name or f), fields)), primaryKey)
         attrs['__delete__'] = 'delete from `%s` where `%s`=?' % (tableName, primaryKey)
         return type.__new__(cls, name, bases, attrs)

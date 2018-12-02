@@ -32,9 +32,9 @@ def cookie2user(cookie_str):
             return None
         uid, expires, sha1 = L
         user = yield from User.find(uid)
-        if len(user)==0:
+        if user is None:
             return None
-        if expires < time.time():
+        if int(expires) < time.time():
             return None
         s = '%s-%s-%s-%s' % (uid, user.passwd, expires, _COOKIE_KEY)
         if sha1!=hashlib.sha1(s.encode('utf-8')).hexdigest():
@@ -105,6 +105,7 @@ def api_register_user(*, email, name, passwd):
     sha1_passwd = '%s:%s' % (uid, passwd)
     user = User(id=uid, email=email, name=name, passwd=hashlib.sha1(sha1_passwd.encode('utf-8')).hexdigest(), \
                 image='http://www.gravatar.com/avatar/%s?d=mm&s=120' % hashlib.md5(email.encode('utf-8')).hexdigest())
+    logging.info('user info: %s' % (user.name))
     yield from user.save()
     r = web.Response()
     r.content_type = 'application/json;charset=utf-8'
