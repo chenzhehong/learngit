@@ -9,12 +9,16 @@ import asyncio, time, re, hashlib, json, logging
 from coroweb import get, post
 from config import configs
 from aiohttp import web
-from apis import APIValueError, APIResourceNotFoundError, APIError
+from apis import APIValueError, APIResourceNotFoundError, APIError, APIPermissionError
 
 from models import User, Blog, Comment, next_id
 
 COOKIE_NAME = 'awesession'
 _COOKIE_KEY = configs.session.secret
+
+def check_admin(request):
+    if request.__user__ is None or not request.__user__.admin:
+        raise APIPermissionError('Only admin can create a new blog.')
 
 def user2cookie(user, max_age):
     expires = str(int(time.time() + max_age))
@@ -79,6 +83,14 @@ def signout(request):
     r.set_cookie(COOKIE_NAME, '-deleted-', max_age=0, httponly=True)
     logging.info('user signed out.')
     return r
+
+@get('/manage/blogs/create')
+def manage_create_blog():
+    return {
+            '__template__': 'manage_blog_edit.html',
+            'id': '',
+            'action': '/api/blogs'
+        }
     
 @get('/api/users')
 def api_get_users():
@@ -136,3 +148,22 @@ def authenticate(*, email, passwd):
     user.passwd = '******'
     r.body = json.dumps(user, ensure_ascii=False).encode('utf-8')
     return r
+
+@get('/api/blogs/{id}')
+def api_get_blog(*, id):
+    blog = yield from Blog.find(id)
+    return blog
+
+@post('/api/blogs')
+def api_create_blog(request, *, name, summary, content):
+    check_admin(request)
+    if not name or not name.strip():
+        raise APIValueError('name', 'name cannot be empty.')
+    if not summary or not summary.strip():
+        raise APIValueError('summary', 'summary cannot be empty.')
+    if not content or not content.strip():
+        raise APIValueError('content', 'content cannot be empty.')
+    blog = Blog(user_id=request.__user__.id, user_name=request.__user__.name, user_image=request.__user__.image, 
+                name=name.strip(), summary=summary.strip(), content=content.strip())
+    yield from blog.save()
+    return blog
