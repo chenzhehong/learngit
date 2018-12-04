@@ -9,7 +9,7 @@ import asyncio, time, re, hashlib, json, logging
 from coroweb import get, post
 from config import configs
 from aiohttp import web
-from apis import APIValueError, APIResourceNotFoundError, APIError, APIPermissionError
+from apis import APIValueError, APIResourceNotFoundError, APIError, APIPermissionError, Page
 
 from models import User, Blog, Comment, next_id
 
@@ -19,6 +19,21 @@ _COOKIE_KEY = configs.session.secret
 def check_admin(request):
     if request.__user__ is None or not request.__user__.admin:
         raise APIPermissionError('Only admin can create a new blog.')
+
+def get_page_index(page_str):
+    p = 1
+    try:
+        p = int(page_str)
+    except ValueError:
+        pass
+    if p < 1:
+        p = 1
+    return p
+
+def text2html(text):
+    lines = map(lambda s: '<p>%s</p>' % s.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;'), \
+                filter(lambda s: s.strip() != '', text.split('\n')))
+    return ''.join(lines)
 
 def user2cookie(user, max_age):
     expires = str(int(time.time() + max_age))
@@ -64,6 +79,19 @@ def index(request):
             'blogs': blogs
         }
 
+@get('/blog/{id}')
+def get_blog(*, id):
+    blog = yield from Blog.find(id)
+    comments = yield from Comment.findAll(where='blog_id=?', args=[id], orderBy='created_at desc')
+    for c in comments:
+        c.html_content = text2html(c.content)
+    blog.html_content = text2html(blog.content)
+    return {
+            '__template__': 'blog.html',
+            'blog': blog,
+            'comments': comments
+        }
+
 @get('/register')
 def register():
     return {
@@ -83,6 +111,13 @@ def signout(request):
     r.set_cookie(COOKIE_NAME, '-deleted-', max_age=0, httponly=True)
     logging.info('user signed out.')
     return r
+
+@get('/manage/blogs')
+def manage_blogs(*, page='1'):
+    return {
+            '__template__': 'manage_blogs.html',
+            'page_index': get_page_index(page)
+        }
 
 @get('/manage/blogs/create')
 def manage_create_blog():
@@ -125,6 +160,16 @@ def api_register_user(*, email, name, passwd):
     user.passwd = '******'
     r.body = json.dumps(user, ensure_ascii=False).encode('utf-8')
     return r
+
+@get('/api/blogs')
+def api_blogs(*, page='1'):
+    page_index = get_page_index(page)
+    num = yield from Blog.findNumber('count(id)')
+    p = Page(num, page_index)
+    if num == 0:
+        return dict(page=p, blogs=())
+    blogs = yield from Blog.findAll(orderBy='created_at desc', limit=(p.offset, p.limit))
+    return dict(page=p, blogs=blogs)
 
 @post('/api/authenticate')
 def authenticate(*, email, passwd):

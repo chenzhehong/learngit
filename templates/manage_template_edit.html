@@ -1,0 +1,88 @@
+{% extends '__base__.html' %}
+
+{% block title %}智能质检-规则维护{% endblock %}
+
+{% block beforehead %}
+
+<script>
+var
+    ID = '{{ id }}',
+    action = '{{ action }}';
+function initVM(template) {
+    var vm = new Vue({
+        el: '#vm',
+        data: template,
+        methods: {
+            submit: function (event) {
+                event.preventDefault();
+                var $form = $('#vm').find('form');
+                $form.postJSON(action, this.$data, function (err, r) {
+                    if (err) {
+                        $form.showFormError(err);
+                    }
+                    else {
+                        return location.assign('/api/blogs/' + r.id);
+                    }
+                });
+            }
+        }
+    });
+    $('#vm').show();
+}
+$(function () {
+	$('#loading').hide();
+    initVM({
+		attrname_one: ['车型名称','车组名称','车系名称','VIN'],
+		attrname_two: ['配件名称','配件编号','核损价格','损失数量','价格方案'],
+		module_one: {attr1: {name: '',attr: ''},
+			attr2: {name: '',attr: ''},
+			attr3: {name: '',attr: ''}
+			},
+		module_two: {sub1: {attr1: {name: '',attr: ''}, attr2: {name: '',attr: ''}, attr3: {name: '',attr: ''}},
+				sub2: {attr1: {name: '',attr: ''}, attr2: {name: '',attr: ''}, attr3: {name: '',attr: ''}},
+				sub3: {attr1: {name: '',attr: ''}, attr2: {name: '',attr: ''}, attr3: {name: '',attr: ''}},
+				sub4: {attr1: {name: '',attr: ''}, attr2: {name: '',attr: ''}, attr3: {name: '',attr: ''}},
+				sub5: {attr1: {name: '',attr: ''}, attr2: {name: '',attr: ''}, attr3: {name: '',attr: ''}}
+			}
+		})
+});
+</script>
+
+{% endblock %}
+
+{% block content %}
+
+    <div class="uk-width-1-1 uk-margin-bottom">
+        <div class="uk-panel uk-panel-box">
+            <ul class="uk-breadcrumb">
+                <li><a href="/manage/comments">评论</a></li>
+                <li><a href="/manage/blogs">日志</a></li>
+                <li><a href="/manage/users">用户</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="error" class="uk-width-1-1">
+    </div>
+
+    <div id="loading" class="uk-width-1-1 uk-text-center">
+        <span><i class="uk-icon-spinner uk-icon-medium uk-icon-spin"></i> 正在加载...</span>
+    </div>
+
+    <div id="vm" class="uk-button-dropdown" data-uk-dropdown="{mode:'click'}">
+
+		<!-- 这是切换下拉菜单的按钮 -->
+		<button class="uk-button">条件1</button>
+
+		<!-- 这是下拉菜单 -->
+		<div class="uk-dropdown uk-dropdown-small">
+			<ul class="uk-nav uk-nav-dropdown">
+				<li v-repeat="attr: attrname_one">
+					<a v-text="attr"></a>
+				</li>
+			</ul>
+		</div>
+
+	</div>
+
+{% endblock %}
