@@ -58,3 +58,35 @@ def getMedianFromSorted(nums1, nums2):
     cut_b = int((size_a + size_b + 1) / 2) - cut_a
     return getmd(nums1, nums2, cut_a, cut_b, 1, size_a)
 
+
+# In[13]:
+
+
+def genList(x):
+    while(x>0):
+        yitem = x%10
+        x = x//10
+        yield yitem
+
+def isPalindrome(x):
+    if x<0:
+        return False
+    isPalin = True
+    ilist = list(genList(x))
+    i = 0
+    j = len(ilist) - 1
+    while(i<j):
+        if(ilist[i]!=ilist[j]):
+            isPalin = False
+            break
+        else:
+            i+=1
+            j-=1
+    return isPalin
+
+
+# In[19]:
+
+
+isPalindrome(1243321)
+
