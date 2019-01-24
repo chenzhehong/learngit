@@ -85,8 +85,32 @@ def isPalindrome(x):
     return isPalin
 
 
-# In[19]:
+# In[2]:
 
 
-isPalindrome(1243321)
+def longestCommonPrefix(slist):
+    common_prefix = []
+    if len(slist)==0:
+        return '' 
+    min_size = len(slist[0])
+    for item in slist:
+        if len(item)<min_size:
+            min_size = len(item)
+    counter = 0
+    while(min_size>0):
+        min_size-=1;
+        substr = slist[0][counter]
+        for item in slist:
+            if(item[counter]!=substr):
+                return ''.join(common_prefix)
+        common_prefix.append(substr)
+        counter+=1
+    return common_prefix
+
+
+# In[6]:
+
+
+slist = ['flig','flix','flix']
+longestCommonPrefix(slist)
 
