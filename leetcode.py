@@ -108,9 +108,75 @@ def longestCommonPrefix(slist):
     return common_prefix
 
 
-# In[6]:
+# In[11]:
 
 
-slist = ['flig','flix','flix']
-longestCommonPrefix(slist)
+def sw3ap(swaplist, index1, index2):
+    tempitem = swaplist[index1]
+    swaplist[index1] = swaplist[index2]
+    swaplist[index2] = tempitem
+
+def qsort(qlist, sindex, eindex):
+    qsize = eindex - sindex + 1
+    mindex = (sindex + eindex) // 2
+    if qsize==1:
+        return
+    elif qsize==2:
+        if qlist[sindex]>qlist[eindex]:
+            sw3ap(qlist, sindex, eindex)
+        return
+    else:
+        if qlist[sindex]>qlist[mindex]:
+            sw3ap(qlist, sindex, mindex)
+        if qlist[sindex]>qlist[eindex]:
+            sw3ap(qlist, sindex, eindex)
+        if qlist[mindex]>qlist[eindex]:
+            sw3ap(qlist, mindex, eindex)
+        if qsize==3:
+            return
+    sw3ap(qlist, mindex, eindex-1)
+    i = sindex + 1
+    j = eindex - 2
+    pivot = qlist[eindex-1]
+    while(True):
+        while(qlist[i]<pivot):
+            i+=1;
+        while(qlist[j]>pivot):
+            j-=1;
+        if i>j:
+            break
+        else:
+            sw3ap(qlist, i, j)
+    sw3ap(qlist, i, eindex-1)
+    qsort(qlist, sindex, i-1)
+    qsort(qlist, i+1, eindex)
+
+def get3sum(qlist):
+    qsize = len(qlist)
+    r_result = []
+    if qsize<3:
+        return r_result
+    else:
+        qsort(qlist, 0, qsize-1)
+    if_exist = False
+    for i in range(0, qsize-2):
+        for j in range(i+1, qsize-1):
+            for k in range(j+1, qsize):
+                if(qlist[i]+qlist[j]+qlist[k]==0):
+                    to_append = [qlist[i],qlist[j],qlist[k]]
+                    for item in r_result:
+                        if item==to_append:
+                            if_exist = True
+                            break
+                    if if_exist:
+                        continue
+                    r_result.append(to_append)
+    return r_result
+
+
+# In[14]:
+
+
+qtest = [5,3,1,4,-4,0,-1]
+get3sum(qtest)
 
